@@ -385,8 +385,6 @@ export function decodeJavEvent<K extends keyof JavEventMap>(
 }
 
 // TODO implement chunking for sending commands to enable a max of 2048 characters vs 64
-// TODO rename event types from JavXEvent to JavXEventDetail
-// TODO move event tag for JavXEvent
 
 /**
  *  Manages a single Javelin HID device in the browser using the WebHID API.
