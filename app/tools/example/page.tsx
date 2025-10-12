@@ -34,6 +34,9 @@ export default function JavelinHidDemo() {
     device.on("connected", (ev)=> {
       console.log("connected", ev.detail)
     })
+    device.on("disconnected", (ev)=> {
+      console.log("disconnected", ev.detail)
+    })
     device.on("script", (ev)=> {
       console.log("script", ev.detail)
     })

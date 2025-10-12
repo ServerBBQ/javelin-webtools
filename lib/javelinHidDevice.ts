@@ -171,7 +171,7 @@ const JavScriptAliases: Record<string, AliasMapping<JavScriptEventDetail>> = {
 /**
  * **Event:** `template_value`
  * 
- * When a template value changes
+ * Fired when a template value changes
  */
 export interface JavTemplateValueEventDetail {
   /** The index of template value changed */
@@ -232,7 +232,7 @@ const JavSuggestionAliases: Record<string, AliasMapping<JavSuggestionEventDetail
 };
 
 /**
- * **Event:** `analog_data`
+ * **Event:** `text`
  * 
  * The output in text for steno, this is used in the writing speed tool
 */
@@ -417,7 +417,7 @@ export class JavelinHidDevice extends EventTarget {
         await this.setupDevice();
         this.connected = true;
         this.emit("connected", event.device)
-      }, 1)
+      }, 10)
     });
 
     // Listen for devices being unplugged

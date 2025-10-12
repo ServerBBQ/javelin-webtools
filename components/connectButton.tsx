@@ -28,8 +28,7 @@ interface ConnectButtonProps {
  *
  * @param {Object} props - Component props.
  * @param {JavelinHidDevice | null} props.hid - The Javelin HID device instance to connect to.
- * @param {(deviceName: string | null) => void} [props.onConnected] - Optional callback fired
- * when a connection is successfully established. Receives the connected device name, or `null` if unavailable.
+ * @param {(device: HIDDevice | null) => void} [props.onConnected] - Optional callback fired
  */
 export default function ConnectButton({ hid, onConnected }: ConnectButtonProps) {
   const [connecting, setConnecting] = useState(false);
