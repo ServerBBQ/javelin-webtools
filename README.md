@@ -148,7 +148,7 @@ hid.on("button_state", (ev: CustomEvent<JavButtonStateEventDetail>) => {
 ```
 
 Raw event data documentation:
-```json
+```jsonc
   {
     /** Event code for button_state */
     "e":"b",
@@ -188,7 +188,7 @@ device.on("dictionary_status", (ev: CustomEvent<JavDictStatusEventDetail>) => {
 ```
 
 Raw event data documentation:
-```json
+```jsonc
 {
   /** Event code for dictionary_status */
   "e":"d",
@@ -217,7 +217,7 @@ interface JavPaperTapeEventDetail {
 TODO example
 
 Raw event documentation:
-```json
+```jsonc
 {
   /** Event code for dictionary_status */
   "e":"p",
@@ -234,10 +234,10 @@ Raw event documentation:
 Events from Javelin script
 
 This could be a layer change event, but could also be any event triggered by the script
-```json
+```jsonc
   {"text":"layer_id: 87377230", "raw": ...}
 ```
-```json
+```jsonc
   {"text":"Any text could go here", "raw": ...}
 ```
 
@@ -253,7 +253,7 @@ interface JavScriptEventDetail {
 TODO example
 
 Raw event documentation:
-```json
+```jsonc
 {
   /** Event code for script event */
   "e":"c",
@@ -282,7 +282,7 @@ interface JavSerialEventDetail {
 TODO example
 
 Raw event docunmentation:
-```json
+```jsonc
 {
   /** Event code for serial event */
   "e":"l",
@@ -315,7 +315,7 @@ interface JavSuggestionEventDetail {
 TODO example
 
 Raw event documentation:
-```json
+```jsonc
 {
   /** Event code for sugguestion event */
   "e":"s",
@@ -347,7 +347,7 @@ interface JavTemplateValueEventDetail {
 TODO example
 
 Raw event documentation:
-```json
+```jsonc
 {
   /** Event code for template value event */
   "e":"v",
@@ -374,7 +374,7 @@ TODO example
 
 TODO raw event docs
 
-```json
+```jsonc
 {
   /** Event code for template value event */
   "e":"t",
