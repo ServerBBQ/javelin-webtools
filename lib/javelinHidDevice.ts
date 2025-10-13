@@ -406,16 +406,22 @@ export class JavelinHidDevice extends EventTarget {
     }
 
     // Listen for devices being plugged in
-    navigator.hid.addEventListener("connect", (event: HIDConnectionEvent) => {
+    navigator.hid.addEventListener("connect", async (event: HIDConnectionEvent) => {
       if (this.connected) {return};
 
-      // Wait for device to init before sending data
-      setTimeout(async ()=>{
-        this.device = event.device;
-        await this.setupDevice();
-        this.connected = true;
-        this.emit("connected", event.device)
-      }, 10)
+      // Ignore devices whose usage page/usage don't match our filters
+      if (!event.device.collections.some(c =>
+        options.filters.some(
+          f => c.usagePage === f.usagePage && (!f.usage || c.usage === f.usage)
+        )
+      )) {
+        return;
+      }
+
+      this.device = event.device;
+      await this.setupDevice();
+      this.connected = true;
+      this.emit("connected", event.device)
     });
 
     // Listen for devices being unplugged
