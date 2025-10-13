@@ -478,9 +478,10 @@ export class JavelinHidDevice extends EventTarget {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
-    const prefix = this.connectionId ? this.connectionId + " " : "";
+    const header = this.connectionId ? this.connectionId + " " : "";
 
-    const commandBytes = encoder.encode(prefix + command + "\n");
+    const headerBytes = encoder.encode(header)
+    const commandBytes = encoder.encode(command + "\n");
 
     let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -531,10 +532,18 @@ export class JavelinHidDevice extends EventTarget {
 
       this.device.addEventListener("inputreport", handler);
 
-      this.device.sendReport(0, commandBytes).catch((err) => {
-        this.device?.removeEventListener("inputreport", handler);
-        reject(err);
-      });
+      const splitCommandBytes = splitUint8Array(commandBytes, 63 - headerBytes.length);
+
+      for (const commandBytesChunk of splitCommandBytes) {
+        const fullPacket = new Uint8Array(63);
+        fullPacket.set(headerBytes, 0);
+        fullPacket.set(commandBytesChunk, headerBytes.length);
+
+        this.device.sendReport(0, fullPacket).catch((err) => {
+          this.device?.removeEventListener("inputreport", handler);
+          reject(err);
+        });
+      }
 
       if (timeout && timeout > 0) {
         timer = setTimeout(() => {
@@ -544,10 +553,14 @@ export class JavelinHidDevice extends EventTarget {
       }
     });
   }
-
   async getConnectionId(){
     const helloOutput = await this.sendCommand("hello");
     const id = helloOutput.slice(0, 3);
+    if (!id.match(/^c\d\d$/)) {
+      console.warn("Error getting connection ID. Output from hello command:", helloOutput);
+      return null;
+    }
+
     this.connectionId = id;
     return id;
   }
@@ -697,4 +710,12 @@ export class JavelinHidDevice extends EventTarget {
     }
   }
 
+}
+
+function splitUint8Array(array: Uint8Array, chunkSize: number) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
 }
