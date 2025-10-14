@@ -45,6 +45,7 @@ the button to prevent duplicate connection requests.
     * Type: {JavelinHidDevice | null}
 * [onConnected] - Optional callback fired when device connected via connect button
     * Type: {(device: HIDDevice | null) => void}
+* [className] - Optional additional CSS classes to style the button
 
 Example:
 ```tsx
@@ -53,6 +54,7 @@ import ConnectButton from "@/components/ConnectButton";
  <ConnectButton
    hid={hid}
    onConnected={(device) => console.log("Connected to:", device?.productName)}
+   className="bg-blue-500"
  />
 ```
 

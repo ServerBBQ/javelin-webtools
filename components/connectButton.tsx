@@ -7,6 +7,7 @@ import { JavelinHidDevice } from "@/lib/javelinHidDevice";
 interface ConnectButtonProps {
   hid: JavelinHidDevice | null;
   onConnected?: (device: HIDDevice | null) => void;
+  className?: string;
 }
 
 /**
@@ -23,14 +24,16 @@ interface ConnectButtonProps {
  * <ConnectButton
  *   hid={hid}
  *   onConnected={(device) => console.log("Connected to:", device?.productName)}
+ *   className="bg-blue-500"
  * />
  * ```
  *
  * @param {Object} props - Component props.
  * @param {JavelinHidDevice | null} props.hid - The Javelin HID device instance to connect to.
- * @param {(device: HIDDevice | null) => void} [props.onConnected] - Optional callback fired
+ * @param {(device: HIDDevice | null) => void} [props.onConnected] - Optional callback fired on connected
+ * @param {string} [props.className] - Optional additional CSS classes to style the button.
  */
-export default function ConnectButton({ hid, onConnected }: ConnectButtonProps) {
+export default function ConnectButton({ hid, onConnected, className }: ConnectButtonProps) {
   const [connecting, setConnecting] = useState(false);
 
   /**
@@ -58,7 +61,9 @@ export default function ConnectButton({ hid, onConnected }: ConnectButtonProps) 
     <button
       onClick={handleConnect}
       disabled={connecting}
-      className="px-4 py-2 rounded text-white bg-blue-500 hover:bg-blue-600">
+      className={`px-4 py-2 rounded text-white bg-blue-500 hover:bg-blue-600 ${className || ""}`}
+    >
+        
       Connect Device
     </button>
   );

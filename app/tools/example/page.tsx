@@ -76,7 +76,7 @@ export default function JavelinHidDemo() {
         onStatusChange={(isConnected) => console.log("Connection state: " + isConnected)}
       />
 
-      <ConnectButton hid={hid} onConnected={(device) => console.log("Connected to:", device?.productName)}/>
+      <ConnectButton hid={hid} onConnected={(device) => console.log("Connected to:", device?.productName)} className="bg-blue-500"/>
 
       <textarea
         ref={consoleRef}
