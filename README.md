@@ -179,7 +179,6 @@ interface JavDictStatusEventDetail {
 ```
 
 Example:
-
 ```tsx
 //                                  Specifying the type is optional
 device.on("dictionary_status", (ev: CustomEvent<JavDictStatusEventDetail>) => {
@@ -216,7 +215,16 @@ interface JavPaperTapeEventDetail {
 }
 ```
 
-TODO example
+Example:
+```tsx
+//                           Specifying the type is optional
+device.on("paper_tape", (ev: CustomEvent<JavPaperTapeEventDetail>) => {
+  console.log("Stroke outline:", ev.detail.outline);
+  console.log("Dictionary:", ev.detail.dictionary);
+  console.log("Translation:", ev.detail.translation);
+});
+
+```
 
 Raw event documentation:
 ```jsonc
@@ -252,7 +260,13 @@ interface JavScriptEventDetail {
 }
 ```
 
-TODO example
+Example:
+```tsx
+//                       Specifying the type is optional
+device.on("script", (ev: CustomEvent<JavScriptEventDetail>) => {
+  console.log("Script event text:", ev.detail.text);
+});
+```
 
 Raw event documentation:
 ```jsonc
@@ -281,7 +295,13 @@ interface JavSerialEventDetail {
 }
 ```
 
-TODO example
+Example:
+```tsx
+//                       Specifying the type is optional
+device.on("serial", (ev: CustomEvent<JavSerialEventDetail>) => {
+  console.log("Base64 serial data:", ev.detail.data);
+});
+```
 
 Raw event docunmentation:
 ```jsonc
@@ -314,7 +334,16 @@ interface JavSuggestionEventDetail {
 }
 ```
 
-TODO example
+Example
+```tsx
+//                           Specifying the type is optional
+device.on("suggestion", (ev: CustomEvent<JavSuggestionEventDetail>) => {
+  console.log("Translation for suggestion:", ev.detail.translation);
+  console.log("Number of strokes covered:", ev.detail.strokes);
+  console.log("Suggested outlines:", ev.detail.outlines);
+});
+
+```
 
 Raw event documentation:
 ```jsonc
