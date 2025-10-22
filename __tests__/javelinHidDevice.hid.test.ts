@@ -199,5 +199,88 @@ describe("JavelinHidDevice (WebHID mocked)", () => {
     expect(id).toBe("c04");
     expect(j.connectionId).toBe("c04");
   });
+
+  describe("sendCommand (multi-report)", () => {
+    it("should split a long command into multiple reports", async () => {
+      const fakeDevice = new FakeHIDDevice();
+      const j = new JavelinHidDevice();
+      j.device = (fakeDevice as unknown) as HIDDevice;
+      j.connected = true;
+      
+      const sendReportSpy = jest.spyOn(fakeDevice, "sendReport");
+
+      const longCommand = "a".repeat(100);
+
+      fakeDevice.sendReportResponder = async (_rid, _data) => {
+        // Simulate a response after the last report is sent
+        if (sendReportSpy.mock.calls.length === 2) {
+            const reply = "OK\n\n";
+            setTimeout(() => fakeDevice.emitInputReport(0, dataViewFromString(reply)), 10);
+        }
+      };
+
+      const response = await j.sendCommand(longCommand, 1000);
+
+      expect(response).toBe("OK");
+      expect(sendReportSpy).toHaveBeenCalledTimes(2);
+
+      const commandBytes = new TextEncoder().encode(longCommand + "\n");
+
+      // Check first report
+      const firstPacket = new Uint8Array(63);
+      firstPacket.set(commandBytes.slice(0, 63));
+      expect(sendReportSpy).toHaveBeenCalledWith(0, firstPacket);
+
+      // Check second report
+      const secondPacket = new Uint8Array(63);
+      secondPacket.set(commandBytes.slice(63, 126));
+      expect(sendReportSpy).toHaveBeenCalledWith(0, secondPacket);
+    });
+
+    it("should split a long command with connectionId into multiple reports", async () => {
+        const fakeDevice = new FakeHIDDevice();
+        const j = new JavelinHidDevice();
+        j.device = (fakeDevice as unknown) as HIDDevice;
+        j.connected = true;
+        j.connectionId = "c01";
+        
+        const sendReportSpy = jest.spyOn(fakeDevice, "sendReport");
+  
+        const longCommand = "a".repeat(100);
+  
+        const headerBytes = new TextEncoder().encode(j.connectionId + " ");
+        const chunkSize = 63 - headerBytes.length;
+        const numChunks = Math.ceil((longCommand.length + 1) / chunkSize);
+
+        fakeDevice.sendReportResponder = async (_rid, _data) => {
+          // Simulate a response after the last report is sent
+          if (sendReportSpy.mock.calls.length === numChunks) {
+              const reply = `${j.connectionId} OK\n\n`;
+              setTimeout(() => fakeDevice.emitInputReport(0, dataViewFromString(reply)), 10);
+          }
+        };
+  
+        const response = await j.sendCommand(longCommand, 1000);
+  
+        expect(response).toBe("OK");
+        expect(sendReportSpy).toHaveBeenCalledTimes(numChunks);
+  
+        const commandBytes = new TextEncoder().encode(longCommand + "\n");
+  
+        // Check first report
+        const firstChunkData = commandBytes.slice(0, chunkSize);
+        const firstPacket = new Uint8Array(63);
+        firstPacket.set(headerBytes);
+        firstPacket.set(firstChunkData, headerBytes.length);
+        expect(sendReportSpy).toHaveBeenCalledWith(0, firstPacket);
+  
+        // Check second report
+        const secondChunkData = commandBytes.slice(chunkSize, chunkSize * 2);
+        const secondPacket = new Uint8Array(63);
+        secondPacket.set(headerBytes);
+        secondPacket.set(secondChunkData, headerBytes.length);
+        expect(sendReportSpy).toHaveBeenCalledWith(0, secondPacket);
+      });
+  });
 });
 
