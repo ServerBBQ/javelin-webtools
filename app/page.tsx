@@ -57,13 +57,12 @@ export default function ToolsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">3rd Party Javelin Web Tools</h1>
-        <div className="grid grid-cols-[repeat(auto-fit,250px)] gap-6 p-6">
+      <div className="grid grid-cols-[repeat(auto-fit,250px)] gap-6 p-6">
         {tools.map((tool) => (
           <Link
             key={tool.name}
             href={tool.link}
-            className="group block border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+            className="group block overflow-hidden hover:shadow-lg transition-shadow"
           >
             <Card className="flex flex-col h-[250px]">
               <CardContent className="flex-1 flex flex-col items-center justify-center">
