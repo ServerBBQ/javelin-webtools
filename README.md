@@ -87,9 +87,30 @@ import ConnectionStatus from "@/components/connectionStatus";
  <ConnectionStatus hid={hid} />
 ```
 
+## Functions
+
+### `JavelinHidDevice` class
+
+This class manages a single Javelin HID device in the browser using the WebHID API.
+
+#### `connect(): Promise<HIDDevice | null>`
+
+Prompts the user to select a Javelin HID device. If a device is selected, it connects to it, sets up the device, and emits a `connected` event.
+
+#### `sendCommand(command: string, timeout?: number): Promise<string>`
+
+Sends a command to the connected device and returns the response. It has a timeout mechanism.
+
+| Parameter | Type     | Description                               |
+| :-------- | :------- | :---------------------------------------- |
+| `command` | `string` | The command to send to the device.        |
+| `timeout` | `number` | Optional timeout in milliseconds.         |
+
+**Returns:** A `Promise` that resolves to the string response from the device.
+
 ## Events
 
-### connected
+### `connected`
 
 ev.detail type: [HIDDevice](https://developer.mozilla.org/en-US/docs/Web/API/HIDDevice)
 
@@ -100,7 +121,7 @@ hid.on("connected", (ev)=> {
 })
 ```
 
-### disconnected
+### `disconnected`
 
 ev.detail type: [HIDDevice](https://developer.mozilla.org/en-US/docs/Web/API/HIDDevice)
 
@@ -111,7 +132,7 @@ hid.on("disconnected", (ev)=> {
 })
 ```
 
-### button_state
+### `button_state`
 
 This happens when a user presses a key only if it is enabled in the layout
 
@@ -162,7 +183,7 @@ Raw event data documentation:
   }
 ```
 
-### dictionary_status
+### `dictionary_status`
 
 This happens when a dictionary is enable or disabled
 
@@ -200,7 +221,7 @@ Raw event data documentation:
 }
 ```
 
-### paper_tape
+### `paper_tape`
 
 Fired each time a stroke is entered on the keyboard.
 
@@ -240,7 +261,7 @@ Raw event documentation:
 }
 ```
 
-### script
+### `script`
 Events from Javelin script
 
 This could be a layer change event, but could also be any event triggered by the script
@@ -278,7 +299,7 @@ Raw event documentation:
 }
 ```
 
-### serial
+### `serial`
 This only exists if the keyboard has BLE(Bluetooth), I am unsure if it only works over bluetooth or works over usb too, TODO check
 
 This is used in the web tools for the serial bridge
@@ -312,7 +333,7 @@ Raw event docunmentation:
 }
 ```
 
-### suggestion
+### `suggestion`
 
 Fired when the keyboard identifies a more efficient outline for a given translation.
 
@@ -359,7 +380,7 @@ Raw event documentation:
 }
 ```
 
-### template_value
+### `template_value`
 
 Fired when a template value changes
 
@@ -388,13 +409,14 @@ Raw event documentation:
   "v":"test"}
 ```
 
-### text
+### `text`
 The output in text for steno, this is used in the writing speed tool
 
 ev.detail type: JavTextEventDetail
 ```ts
 interface JavTextEventDetail {
   event: "text";
+  /** The text typed */
   text: string;
   /** Raw event data */
   raw: string;
@@ -403,18 +425,16 @@ interface JavTextEventDetail {
 
 TODO example
 
-TODO raw event docs
-
 ```jsonc
 {
   /** Event code for template value event */
   "e":"t",
-  /** The text */
+  /** The text typed */
   "t":" Test"
 }
 ```
 
-### analog_data
+### `analog_data`
 Provides analog data for sliders.
 This currently is only used on [Jeff's personal device](https://discord.com/channels/136953735426473984/1034560725047316530/1413829434770722936)
 Each event reports the current positions of the sliders on the device.
