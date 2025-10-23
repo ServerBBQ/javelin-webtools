@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { JavelinHidDevice } from "@/lib/javelinHidDevice";
+import { useState, useEffect } from "react";
+import { JavelinHidDevice, isHidSupported } from "@/lib/javelinHidDevice";
 
 
 interface ConnectButtonProps {
@@ -35,6 +35,11 @@ interface ConnectButtonProps {
  */
 export default function ConnectButton({ hid, onConnected, className }: ConnectButtonProps) {
   const [connecting, setConnecting] = useState(false);
+  const [hidSupported, setHidSupported] = useState(true);
+
+  useEffect(() => {
+    setHidSupported(isHidSupported());
+  }, []);
 
   /**
    * Attempts to connect to the provided HID device.
@@ -60,11 +65,11 @@ export default function ConnectButton({ hid, onConnected, className }: ConnectBu
   return (
     <button
       onClick={handleConnect}
-      disabled={connecting}
+      disabled={!hidSupported || connecting}
       className={`px-4 py-2 rounded text-white bg-blue-500 hover:bg-blue-600 ${className || ""}`}
     >
         
-      Connect Device
+      {connecting ? "Connecting..." : hidSupported ? "Connect Device" : "WebHID not supported"}
     </button>
   );
 }

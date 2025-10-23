@@ -89,6 +89,20 @@ import ConnectionStatus from "@/components/connectionStatus";
 
 ## Functions
 
+
+### `isHidSupported(): boolean`
+
+Checks if the WebHID API is supported in the current browser environment.
+
+**Returns:** A `boolean` indicating whether WebHID is supported (`true`) or not (`false`).
+
+Example:
+```tsx
+import isHidSupported from "@/lib/javelinHidDevice";
+
+console.log(isHidSupported());
+```
+
 ### `JavelinHidDevice` class
 
 This class manages a single Javelin HID device in the browser using the WebHID API.

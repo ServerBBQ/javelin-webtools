@@ -1,5 +1,9 @@
 "use client";
 
+export function isHidSupported(): boolean {
+  return !!navigator?.hid;
+}
+
 const options: HIDDeviceRequestOptions = {
   filters: [
     {
@@ -402,7 +406,7 @@ export class JavelinHidDevice extends EventTarget {
   constructor() {
     super()
     if (!navigator?.hid) {
-      throw new Error("WebHID is not available in this environment");
+      return;
     }
 
     // Listen for devices being plugged in
