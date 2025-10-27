@@ -20,25 +20,28 @@ export default function JavelinHidDemo() {
     setHid(device);
 
     device.on("dictionary_status", (ev) => {
-      console.log("dictionary_status", ev.detail)
+      console.log("dictionary_status", ev.detail);
     })
 
     // This only triggers if enabled in the key layout
     device.on("button_state", (ev) => {
       console.log("button_state", ev.detail)
-      console.log("button 10 pressed", ev.detail.keys[10])
+      console.log("button 10 pressed", ev.detail.keys[10]);
 
       // This is all that is needed to update the page since the variable `buttonFivePressed` is used inside the page
       setButtonFivePressed(ev.detail.keys[5]);
     })
+    device.on("paper_tape", (ev)=> {
+      console.log("paper_tape", ev.detail);
+    })
     device.on("connected", (ev)=> {
-      console.log("connected", ev.detail)
+      console.log("connected", ev.detail);
     })
     device.on("disconnected", (ev)=> {
-      console.log("disconnected", ev.detail)
+      console.log("disconnected", ev.detail);
     })
     device.on("script", (ev)=> {
-      console.log("script", ev.detail)
+      console.log("script", ev.detail);
     })
   }, []);
 

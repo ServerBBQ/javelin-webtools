@@ -38,6 +38,7 @@ describe("decodeJavEvent", () => {
     expect(decoded.event).toBe("dictionary_status");
     expect(decoded.detail.dictionary).toBe("user.json");
     expect(decoded.detail.enabled).toBe(true);
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes button_state event with base64 data", () => {
@@ -47,6 +48,7 @@ describe("decodeJavEvent", () => {
     const decoded = decodeJavEvent(input)! as unknown as DecodedJavEvent<"button_state">;
     expect(decoded.event).toBe("button_state");
     expect(decoded.detail.keys).toEqual(bits);
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes suggestion event", () => {
@@ -56,15 +58,18 @@ describe("decodeJavEvent", () => {
     expect(decoded.detail.strokes).toBe(2);
     expect(decoded.detail.translation).toBe("this is");
     expect(decoded.detail.outlines).toEqual(["TH-S", "STKHE", "STKH-B"]);
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes paper_tape event", () => {
-    const input = { e: "p", o: "TH", d: "main.json", t: "this" };
+    const input = { e: "p", o: "TH", d: "main.json", t: "this", u: 2 };
     const decoded = decodeJavEvent(input)! as unknown as DecodedJavEvent<"paper_tape">;;
     expect(decoded.event).toBe("paper_tape");
     expect(decoded.detail.outline).toBe("TH");
     expect(decoded.detail.dictionary).toBe("main.json");
     expect(decoded.detail.translation).toBe("this");
+    expect(decoded.detail.undo).toBe(2);
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes script event", () => {
@@ -72,6 +77,7 @@ describe("decodeJavEvent", () => {
     const decoded = decodeJavEvent(input)! as unknown as DecodedJavEvent<"script">;
     expect(decoded.event).toBe("script");
     expect(decoded.detail.text).toBe("layer_id: 87377230");
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes template_value event", () => {
@@ -80,6 +86,7 @@ describe("decodeJavEvent", () => {
     expect(decoded.event).toBe("template_value");
     expect(decoded.detail.index).toBe(0);
     expect(decoded.detail.value).toBe("test");
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes serial event", () => {
@@ -87,6 +94,7 @@ describe("decodeJavEvent", () => {
     const decoded = decodeJavEvent(input)! as unknown as DecodedJavEvent<"serial">;
     expect(decoded.event).toBe("serial");
     expect(decoded.detail.data).toBe("BAA=");
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 
   test("decodes analog_data event", () => {
@@ -107,5 +115,73 @@ describe("decodeJavEvent", () => {
     expect(decoded.event).toBe("text");
     expect(decoded.detail.text).toBe("Hello");
     expect((decoded.detail as any).foo).toBeUndefined();
+  });
+
+  describe("decodeJavEvent with legacy events", () => {
+    test("decodes legacy button_state event", () => {
+      const input = { event: "button_state", data: "FAAAAAAAAAA="};
+      const decoded = decodeJavEvent(input as any)! as unknown as DecodedJavEvent<"button_state">;
+      expect(decoded.event).toBe("button_state");
+
+      // Check that that key array is filled with 64 zeros except index 2 and 4
+      expect(decoded.detail.keys.length).toBe(64);
+      expect(decoded.detail.keys[2]).toBe(true);
+      expect(decoded.detail.keys[4]).toBe(true);
+      for (let i = 0; i < 64; i++) {
+        if (i !== 2 && i !== 4) {
+          expect(decoded.detail.keys[i]).toBe(false);
+        }
+      }
+      expect(decoded.detail.raw).toBe(JSON.stringify(input));
+    });
+
+    test("decodes legacy dictionary status event", () => {
+      const input = { event: "dictionary_status", dictionary: "user.json", enabled: true };
+      const decoded = decodeJavEvent(input as any)! as unknown as DecodedJavEvent<"dictionary_status">;
+      expect(decoded.event).toBe("dictionary_status");
+      expect(decoded.detail.dictionary).toBe("user.json");
+      expect(decoded.detail.enabled).toBe(true);
+      expect(decoded.detail.raw).toBe(JSON.stringify(input));
+    });
+
+    test("decodes legacy script event", () => {
+      const input = { event: "script", text: "layer_id: 87377230" };
+      const decoded = decodeJavEvent(input as any)! as unknown as DecodedJavEvent<"script">;
+      expect(decoded.event).toBe("script");
+      expect(decoded.detail.text).toBe("layer_id: 87377230");
+      expect(decoded.detail.raw).toBe(JSON.stringify(input));
+    });
+
+
+
+    test("decodes legacy template_value event", () => {
+      const input = { event: "template_value", index: 0, value: "test" };
+      const decoded = decodeJavEvent(input as any)! as unknown as DecodedJavEvent<"template_value">;
+      expect(decoded.event).toBe("template_value");
+      expect(decoded.detail.index).toBe(0);
+      expect(decoded.detail.value).toBe("test");
+      expect(decoded.detail.raw).toBe(JSON.stringify(input));
+    });
+
+    test("decodes legacy suggestion event", () => {
+      const input = { event: "suggestion", combine_count: 2, text: "this is", outlines: ["TH-S", "STKHE", "STKH-B"] };
+      const decoded = decodeJavEvent(input as any)! as unknown as DecodedJavEvent<"suggestion">;
+      expect(decoded.event).toBe("suggestion");
+      expect(decoded.detail.strokes).toBe(2);
+      expect(decoded.detail.translation).toBe("this is");
+      expect(decoded.detail.outlines).toEqual(["TH-S", "STKHE", "STKH-B"]);
+      expect(decoded.detail.raw).toBe(JSON.stringify(input));
+    });
+  });
+
+  test("decodes legacy paper_tape event", () => {
+    const input = { event: "paper_tape", data: "TH", dictionary: "main.json", definition: "this", undo: 2};
+    const decoded = decodeJavEvent(input as any)! as unknown as DecodedJavEvent<"paper_tape">;;
+    expect(decoded.event).toBe("paper_tape");
+    expect(decoded.detail.outline).toBe("TH");
+    expect(decoded.detail.dictionary).toBe("main.json");
+    expect(decoded.detail.translation).toBe("this");
+    expect(decoded.detail.undo).toBe(2);
+    expect(decoded.detail.raw).toBe(JSON.stringify(input));
   });
 });

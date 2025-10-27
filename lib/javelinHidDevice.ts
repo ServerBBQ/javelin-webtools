@@ -112,6 +112,7 @@ export interface JavButtonStateEventDetail {
 
 export const JavButtonStateAliases: Record<string, AliasMapping<JavButtonStateEventDetail>> = {
   d: { key: "keys", type: "boolean[]" },
+  data: { key: "keys", type: "boolean[]" }, // Legacy event format
 };
 
 /**
@@ -130,7 +131,10 @@ export interface JavDictStatusEventDetail {
 
 const JavDictStatusAliases: Record<string, AliasMapping<JavDictStatusEventDetail>> = {
   d: { key: "dictionary", type: "string" },
+  dictionary: { key: "dictionary", type: "string" },
+
   v: { key: "enabled", type: "boolean" },
+  enabled: { key: "enabled", type: "boolean" }, // Legacy event format
 };
 
 
@@ -143,14 +147,28 @@ export interface JavPaperTapeEventDetail {
   outline: string ;
   dictionary: string;
   translation: string;
+  /** 
+   * The number of strokes to undo in order to get the correct translation
+   * EX JAV/LIN
+   * The undo count for the `LIN` stroke is 1
+   */
+  undo: number;
   /** Raw event data */
   raw: string;
 }
 
 const JavPaperTapeAliases: Record<string, AliasMapping<JavPaperTapeEventDetail>> = {
   o: { key: "outline", type: "string" },
+  data: { key: "outline", type: "string" }, // Legacy event format
+
   d: { key: "dictionary", type: "string" },
+  dictionary: { key: "dictionary", type: "string" }, // Legacy event format
+
   t: { key: "translation", type: "string" },
+  definition: { key: "translation", type: "string" }, // Legacy event format
+
+  u: { key: "undo", type: "number" },
+  undo: { key: "undo", type: "number" }, // Legacy event format
 };
 
 /**
@@ -170,6 +188,7 @@ export interface JavScriptEventDetail {
 
 const JavScriptAliases: Record<string, AliasMapping<JavScriptEventDetail>> = {
   t: { key: "text", type: "string" },
+  text: { key: "text", type: "string" }, // Legacy event format
 };
 
 /**
@@ -188,7 +207,10 @@ export interface JavTemplateValueEventDetail {
 
 const JavTemplateValueAliases: Record<string, AliasMapping<JavTemplateValueEventDetail>> = {
   i: { key: "index", type: "number" },
+  index: { key: "index", type: "number" }, // Legacy event format
+
   v: { key: "value", type: "string" },
+  value: { key: "value", type: "string" }, // Legacy event format
 };
 
 /**
@@ -231,8 +253,13 @@ export interface JavSuggestionEventDetail {
 
 const JavSuggestionAliases: Record<string, AliasMapping<JavSuggestionEventDetail>> = {
   c: { key: "strokes", type: "number" },
+  combine_count: { key: "strokes", type: "number" }, // Legacy event format
+
   t: { key: "translation", type: "string" },
+  text: { key: "translation", type: "string" }, // Legacy event format
+
   o: { key: "outlines", type: "string[]" },
+  outlines: { key: "outlines", type: "string[]" }, // Legacy event format
 };
 
 /**
@@ -273,36 +300,78 @@ const JavAnalogDataAliases: Record<string, AliasMapping<JavAnalogDataEventDetail
  */
 const JavAliasToEventName: Record<string, keyof JavEventMap> = {
   b: 'button_state',
+  button_state: 'button_state',
+  
   d: 'dictionary_status',
+  dictionary_status: 'dictionary_status',
+
   p: 'paper_tape',
+  paper_tape: 'paper_tape',
+
   c: 'script',
+  script: 'script',
+
   l: 'serial',
+  // Could not find legacy event name/usage
+
   s: 'suggestion',
+  suggestion: 'suggestion',
+
   v: 'template_value',
+  template_value: 'template_value',
+
   t: 'text',
+  // Could not find legacy event name/usage
+  
   a: 'analog_data',
+  // Could not find legacy event name/usage
 };
 
 type EventAliases = {
   b: Record<string, AliasMapping<JavButtonStateEventDetail>>,
+  button_state: Record<string, AliasMapping<JavButtonStateEventDetail>>,
+
   d: Record<string, AliasMapping<JavDictStatusEventDetail>>,
+  dictionary_status: Record<string, AliasMapping<JavDictStatusEventDetail>>,
+
   p: Record<string, AliasMapping<JavPaperTapeEventDetail>>,
+  paper_tape: Record<string, AliasMapping<JavPaperTapeEventDetail>>,
+
   c: Record<string, AliasMapping<JavScriptEventDetail>>,
+  script: Record<string, AliasMapping<JavScriptEventDetail>>,
+
   l: Record<string, AliasMapping<JavSerialEventDetail>>,
+
   s: Record<string, AliasMapping<JavSuggestionEventDetail>>,
+  suggestion: Record<string, AliasMapping<JavSuggestionEventDetail>>,
+
   v: Record<string, AliasMapping<JavTemplateValueEventDetail>>,
+  template_value: Record<string, AliasMapping<JavTemplateValueEventDetail>>,
+
   t: Record<string, AliasMapping<JavTextEventDetail>>,
   a: Record<string, AliasMapping<JavAnalogDataEventDetail>>,
 };
 
 const JavAliases: EventAliases = {
   b: JavButtonStateAliases,
+  button_state: JavButtonStateAliases,
+
   d: JavDictStatusAliases,
+  dictionary_status: JavDictStatusAliases,
+
   p: JavPaperTapeAliases,
+  paper_tape: JavPaperTapeAliases,
+
   c: JavScriptAliases,
+  script: JavScriptAliases,
+
   l: JavSerialAliases,
   s: JavSuggestionAliases,
+  suggestion: JavSuggestionAliases,
+
   v: JavTemplateValueAliases,
+  template_value: JavTemplateValueAliases,
+
   t: JavTextAliases,
   a: JavAnalogDataAliases,
 };
@@ -334,6 +403,15 @@ export type DecodedJavEvent<K extends keyof JavEventMap> = {
 export function decodeJavEvent<K extends keyof JavEventMap>(
   ev: { e: string; [key: string]: unknown }
 ): DecodedJavEvent<keyof JavEventMap> | null {
+  // save event
+  const unmodifiedEvent = ev;
+
+  // Support legacy events
+  if (ev.event !== undefined) {
+    ev.e = ev.event as string;
+    delete ev.event;
+  }
+
   const eventKey = JavAliasToEventName[ev.e] as K | undefined;
   if (!eventKey) return null;
 
@@ -342,7 +420,7 @@ export function decodeJavEvent<K extends keyof JavEventMap>(
   const aliases = JavAliases[ev.e as keyof EventAliases];
 
   // Build as a plain record first
-  const detailRecord: Record<string, unknown> = { raw: JSON.stringify(ev) };
+  const detailRecord: Record<string, unknown> = { raw: JSON.stringify(unmodifiedEvent) };
 
   function coerceValue(value: unknown, type: CoercibleType): unknown {
     if (value === null || value === undefined) {

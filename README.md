@@ -245,6 +245,12 @@ interface JavPaperTapeEventDetail {
   outline: string ;
   dictionary: string;
   translation: string;
+  /** 
+   * The number of strokes to undo in order to get the correct translation
+   * EX JAV/LIN
+   * The undo count for the `LIN` stroke is 1
+   */
+  undo: number;
   /** Raw event data */
   raw: string;
 }
@@ -271,7 +277,9 @@ Raw event documentation:
   /** Dictionary */
   "d":"main.json",
   /** Translation */
-  "t":"this"
+  "t":"this",
+  /** Undo count */
+  "u":1
 }
 ```
 
