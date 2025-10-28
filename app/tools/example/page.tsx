@@ -36,6 +36,12 @@ export default function JavelinHidDemo() {
     })
     device.on("connected", (ev)=> {
       console.log("connected", ev.detail);
+
+      // setTimeout because currently two sendCommands cannot be sent at once.
+      // a sendCommand is already sent during the connection process to enable events, so using it immediately is not supported right now
+      setTimeout(async ()=> {
+        console.log( "Test lookup results", await device.lookup("test"))
+      }, 1000);
     })
     device.on("disconnected", (ev)=> {
       console.log("disconnected", ev.detail);

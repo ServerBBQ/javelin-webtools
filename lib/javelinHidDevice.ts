@@ -91,6 +91,15 @@ export interface JavEventMap {
   analog_data: JavAnalogDataEventDetail;
 }
 
+/**
+ * The result of a lookup command.
+ */
+export interface LookupResult {
+  outline: string;
+  dictionary: string | null;
+  removable?: boolean;
+}
+
 type CoercibleType = "number" | "boolean" | "boolean[]" | "string" | "string[]" | "unknown";
 
 interface AliasMapping<T> {
@@ -639,6 +648,55 @@ export class JavelinHidDevice extends EventTarget {
       }
     });
   }
+
+  /**
+   * Looks up outlines for a given text from the Javelin device.
+   * @param text The text to look up.
+   * @returns A promise that resolves to an array of lookup results.
+   * @example
+   * ```ts
+   * const results = await device.lookup("test");
+   * for (const result of results) {
+   *   console.log(`Outline: ${result.outline}, Removable: ${result.removable}`);
+   * }
+   * ```
+   */
+  async lookup(text: string): Promise<LookupResult[]> {
+    const response = await this.sendCommand(`lookup ${text}`);
+    console.log(response)
+    const rawResults: { o: string; d: string | number; r?: 1 }[] = JSON.parse(response);
+
+    if (rawResults.length === 0) {
+      return [];
+    }
+
+    const resolvedDictionaries: (string | null)[] = new Array(rawResults.length).fill(null);
+
+    const getDictionary = (item: { d: string | number; r?: 1 }): string | null => {
+      if (typeof item.d === 'string') {
+        return item.d;
+      }
+
+      if (typeof item.d === 'number') {
+        return getDictionary(rawResults[item.d]);
+      }
+      return null;
+    };
+
+    // First pass: resolve all dictionary values
+    rawResults.forEach((result, index) => {
+      resolvedDictionaries[index] = getDictionary(result);
+    });
+
+    return rawResults.map((item, index) => {
+      return {
+        outline: item.o,
+        dictionary: resolvedDictionaries[index],
+        removable: item.r === 1,
+      };
+    });
+  }
+
   async getConnectionId(){
     const helloOutput = await this.sendCommand("hello");
     const id = helloOutput.slice(0, 3);
