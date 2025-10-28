@@ -490,6 +490,8 @@ export class JavelinHidDevice extends EventTarget {
    */
   connectionId?: string = undefined;
 
+  sendCommandLock = new Lock();
+
   constructor() {
     super()
     if (!navigator?.hid) {
@@ -591,6 +593,9 @@ export class JavelinHidDevice extends EventTarget {
         collecting = true; // Collect always if no connection id set
       }
 
+      // Aquire lock
+      await this.sendCommandLock.acquire();
+
       const handler = (event: HIDInputReportEvent) => {
         if (event.reportId === 0) {
           const chunk = decoder.decode(new Uint8Array(event.data.buffer))
@@ -617,7 +622,8 @@ export class JavelinHidDevice extends EventTarget {
 
             // trim responceBuffer
             responseBuffer = responseBuffer.split("\n\n")[0];
-           responseBuffer = responseBuffer.replace(/^\x00+/, ''); // Strip null characters
+            responseBuffer = responseBuffer.replace(/^\x00+/, ''); // Strip null characters
+            this.sendCommandLock.release();
             resolve(responseBuffer);
             clearTimeout(timer);
             this.device?.removeEventListener("inputreport", handler);
@@ -636,6 +642,7 @@ export class JavelinHidDevice extends EventTarget {
 
         this.device.sendReport(0, fullPacket).catch((err) => {
           this.device?.removeEventListener("inputreport", handler);
+          this.sendCommandLock.release();
           reject(err);
         });
       }
@@ -643,6 +650,7 @@ export class JavelinHidDevice extends EventTarget {
       if (timeout && timeout > 0) {
         timer = setTimeout(() => {
           this.device?.removeEventListener("inputreport", handler);
+          this.sendCommandLock.release();
           reject(new Error("Command timed out"));
         }, timeout);
       }
@@ -663,7 +671,6 @@ export class JavelinHidDevice extends EventTarget {
    */
   async lookup(text: string): Promise<LookupResult[]> {
     const response = await this.sendCommand(`lookup ${text}`);
-    console.log(response)
     const rawResults: { o: string; d: string | number; r?: 1 }[] = JSON.parse(response);
 
     if (rawResults.length === 0) {
@@ -862,4 +869,38 @@ function splitUint8Array(array: Uint8Array, chunkSize: number) {
     chunks.push(array.slice(i, i + chunkSize));
   }
   return chunks;
+}
+
+class Lock {
+  private locked = false;
+  private waiting: (() => void)[] = [];
+
+  async acquire(): Promise<void> {
+    if (!this.locked) {
+      this.locked = true;
+      return;
+    }
+
+    // Wait until lock is released
+    await new Promise<void>((resolve) => this.waiting.push(resolve));
+  }
+
+  release(): void {
+    if (this.waiting.length > 0) {
+      // Give lock to next waiter
+      const next = this.waiting.shift()!;
+      next();
+    } else {
+      this.locked = false;
+    }
+  }
+
+  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    await this.acquire();
+    try {
+      return await fn();
+    } finally {
+      this.release();
+    }
+  }
 }
