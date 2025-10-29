@@ -97,7 +97,8 @@ export interface JavEventMap {
 export interface LookupResult {
   outline: string;
   dictionary: string | null;
-  removable?: boolean;
+  translation: string;
+  removable: boolean;
 }
 
 type CoercibleType = "number" | "boolean" | "boolean[]" | "string" | "string[]" | "unknown";
@@ -658,7 +659,7 @@ export class JavelinHidDevice extends EventTarget {
   }
 
   /**
-   * Looks up outlines for a given text from the Javelin device.
+   * Looks up outlines for given text from the Javelin device.
    * @param text The text to look up.
    * @returns A promise that resolves to an array of lookup results.
    * @example
@@ -671,34 +672,60 @@ export class JavelinHidDevice extends EventTarget {
    */
   async lookup(text: string): Promise<LookupResult[]> {
     const response = await this.sendCommand(`lookup ${text}`);
-    const rawResults: { o: string; d: string | number; r?: 1 }[] = JSON.parse(response);
+    const rawResults: { o: string; d: string | number; t?: string ;r?: 1 }[] = JSON.parse(response);
 
     if (rawResults.length === 0) {
       return [];
     }
 
     const resolvedDictionaries: (string | null)[] = new Array(rawResults.length).fill(null);
+    const resolvedTranslations: string[] = new Array(rawResults.length).fill(text);
 
+    // Map for dictionaries to be used in dictionary lookup
+    const dictionaries: string[] = []
+
+    /** This function must be called in order from first item to last, then once looped over once it can be called in any order */
     const getDictionary = (item: { d: string | number; r?: 1 }): string | null => {
       if (typeof item.d === 'string') {
+        dictionaries.push(item.d);
         return item.d;
       }
 
       if (typeof item.d === 'number') {
-        return getDictionary(rawResults[item.d]);
+        return dictionaries[item.d];
       }
       return null;
     };
 
+    // Map for translations to be used in translation lookup
+    const translations: string[] = [];
+
+    /** This function must be called in order from first item to last, then once looped over once it can be called in any order */
+    const getTranslation = (item: { t?: string }): string => {
+      if (typeof item.t === 'string') {
+        translations.push(item.t);
+        return item.t;
+      }
+      
+      if (typeof item.t === 'number') {
+        return translations[item.t];
+      }
+
+      return text;
+    };
+
+
     // First pass: resolve all dictionary values
     rawResults.forEach((result, index) => {
       resolvedDictionaries[index] = getDictionary(result);
+      resolvedTranslations[index] = getTranslation(result);
     });
 
     return rawResults.map((item, index) => {
       return {
         outline: item.o,
         dictionary: resolvedDictionaries[index],
+        translation: resolvedTranslations[index],
         removable: item.r === 1,
       };
     });

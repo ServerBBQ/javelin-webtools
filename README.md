@@ -122,6 +122,36 @@ Sends a command to the connected device and returns the response. It has a timeo
 
 **Returns:** A `Promise` that resolves to the string response from the device.
 
+#### `lookup(text: string): Promise<LookupResult[]>`
+
+Looks up outlines for a given text from the Javelin device.
+
+| Parameter | Type     | Description              |
+| :-------- | :------- | :----------------------- |
+| `text`    | `string` | The text to look up.     |
+
+**Returns:** A `Promise` that resolves to an array of `LookupResult` objects.
+
+Example output:
+```jsonc
+[
+  {
+    "outline": "TEFT",
+    "dictionary": "main.json",
+    "translation": "test",
+    "removable": false
+  }
+]
+```
+
+**Example:**
+```tsx
+const results = await device.lookup("test");
+for (const result of results) {
+  console.log(`Outline: ${result.outline}, dictionary: ${result.dictionary}`);
+}
+```
+
 ## Events
 
 ### `connected`
