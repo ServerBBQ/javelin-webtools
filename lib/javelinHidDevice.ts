@@ -683,12 +683,23 @@ export class JavelinHidDevice extends EventTarget {
    */
   async lookup(text: string): Promise<LookupResult[]> {
     const response = await this.sendCommand(`lookup ${text}`);
-    const rawResults: { o: string; d: string | number; t?: string ;r?: 1 }[] = JSON.parse(response);
+    const rawResults = JSON.parse(response);
 
-    if (rawResults.length === 0) {
+    if (!rawResults || rawResults.length === 0) {
       return [];
     }
 
+    // Check for legacy firmware format
+    if ('outline' in rawResults[0]) {
+      return rawResults.map((item: { outline: string; dictionary?: string; definition: string; can_remove?: boolean }) => ({
+        outline: item.outline,
+        dictionary: item.dictionary || null,
+        translation: item.definition,
+        removable: item.can_remove || false,
+      }));
+    }
+
+    // Modern firmware format
     const resolvedDictionaries: (string | null)[] = new Array(rawResults.length).fill(null);
     const resolvedTranslations: string[] = new Array(rawResults.length).fill(text);
 
@@ -727,12 +738,12 @@ export class JavelinHidDevice extends EventTarget {
 
 
     // First pass: resolve all dictionary values
-    rawResults.forEach((result, index) => {
+    rawResults.forEach((result: { d: string | number; t?: string; r?: 1 }, index: number) => {
       resolvedDictionaries[index] = getDictionary(result);
       resolvedTranslations[index] = getTranslation(result);
     });
 
-    return rawResults.map((item, index) => {
+    return rawResults.map((item: { o: string; d: string | number; t?: string; r?: 1 }, index: number) => {
       return {
         outline: item.o,
         dictionary: resolvedDictionaries[index],

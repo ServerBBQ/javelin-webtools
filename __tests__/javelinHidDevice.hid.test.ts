@@ -282,5 +282,112 @@ describe("JavelinHidDevice (WebHID mocked)", () => {
         expect(sendReportSpy).toHaveBeenCalledWith(0, secondPacket);
       });
   });
-});
 
+  describe("lookup", () => {
+    it("should parse legacy lookup results correctly", async () => {
+      const fakeDevice = new FakeHIDDevice();
+      const j = new JavelinHidDevice();
+      j.device = (fakeDevice as unknown) as HIDDevice;
+      j.connected = true;
+
+      const legacyResponse = JSON.stringify([
+        {
+          "outline": "TEF",
+          "definition": "test",
+          "dictionary": "main.json",
+          "can_remove": true
+        },
+        {
+          "outline": "T*ES",
+          "definition": "test",
+          "dictionary": "main.json",
+        },
+        {
+          "outline": "TEFT",
+          "definition": "test",
+          "dictionary": "main.json",
+        },
+        {
+          "outline": "TEFLT",
+          "definition": "test",
+          "dictionary": "main.json",
+        }
+      ]);
+
+      fakeDevice.sendReportResponder = async (_rid, _data) => {
+        const reply = legacyResponse + "\n\n";
+        setTimeout(() => fakeDevice.emitInputReport(0, dataViewFromString(reply)), 10);
+      };
+
+      const results = await j.lookup('test');
+
+      expect(results).toHaveLength(4);
+      expect(results[0]).toEqual({
+        outline: 'TEF',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: true,
+      });
+      expect(results[1]).toEqual({
+        outline: 'T*ES',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: false,
+      });
+      expect(results[2]).toEqual({
+        outline: 'TEFT',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: false,
+      });
+      expect(results[3]).toEqual({
+        outline: 'TEFLT',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: false,
+      });
+    });
+
+    it("should parse modern lookup results correctly", async () => {
+      const fakeDevice = new FakeHIDDevice();
+      const j = new JavelinHidDevice();
+      j.device = (fakeDevice as unknown) as HIDDevice;
+      j.connected = true;
+
+      const modernResponse = JSON.stringify([{"o":"TEF","d":"main.json","r":1},{"o":"T*ES","d":0},{"o":"TEFT","d":0},{"o":"TEFLT","d":0}]);
+
+      fakeDevice.sendReportResponder = async (_rid, _data) => {
+        const reply = modernResponse + "\n\n";
+        setTimeout(() => fakeDevice.emitInputReport(0, dataViewFromString(reply)), 10);
+      };
+
+      const results = await j.lookup('test');
+
+      expect(results).toHaveLength(4);
+      expect(results[0]).toEqual({
+        outline: 'TEF',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: true,
+      });
+      expect(results[1]).toEqual({
+        outline: 'T*ES',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: false,
+      });
+      expect(results[2]).toEqual({
+        outline: 'TEFT',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: false,
+      });
+      expect(results[3]).toEqual({
+        outline: 'TEFLT',
+        translation: 'test',
+        dictionary: 'main.json',
+        removable: false,
+      });
+    });
+  });
+});
