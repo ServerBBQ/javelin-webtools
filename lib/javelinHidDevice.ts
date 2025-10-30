@@ -491,10 +491,10 @@ export class JavelinHidDevice extends EventTarget {
    */
   connectionId?: string = undefined;
 
-  sendCommandLock = new Lock();
+  private sendCommandLock = new Lock();
 
   constructor() {
-    super()
+    super();
     if (!navigator?.hid) {
       return;
     }
@@ -574,87 +574,98 @@ export class JavelinHidDevice extends EventTarget {
     timeout?: number
   ): Promise<string> {
     const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
 
     const header = this.connectionId ? this.connectionId + " " : "";
 
+    const decoder = new TextDecoder();
     const headerBytes = encoder.encode(header)
     const commandBytes = encoder.encode(command + "\n");
 
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const originalDevice = this.device;
 
-    return new Promise(async (resolve, reject) => {
-      if (!this.device) throw new Error("No device connected");
-      if (!this.device.opened) await this.openDeviceWithRetry();
 
-      let responseBuffer = "";
-      let collecting = false; // Start collecting only after we see our connectionId
+    return this.sendCommandLock.runExclusive(async () => {
+      return new Promise(async (resolve, reject) => {
+        if (!this.device) throw new Error("No device connected");
+        if (!this.device.opened) await this.openDeviceWithRetry();
+        // Catch edge case where device disconnects or changes while acquiring lock
+        if (this.device !== originalDevice) throw new Error("Device changed while acquiring lock");
 
-      if (!this.connectionId) {
-        collecting = true; // Collect always if no connection id set
-      }
+        let responseBuffer = "";
+        let collecting = false; // Start collecting only after we see our connectionId
 
-      // Aquire lock
-      await this.sendCommandLock.acquire();
+        if (!this.connectionId) {
+          collecting = true; // Collect always if no connection id set
+        }
 
-      const handler = (event: HIDInputReportEvent) => {
-        if (event.reportId === 0) {
-          const chunk = decoder.decode(new Uint8Array(event.data.buffer))
-          responseBuffer += chunk;
+        const handler = (event: HIDInputReportEvent) => {
+          if (event.reportId === 0) {
+            const chunk = decoder.decode(new Uint8Array(event.data.buffer))
+            responseBuffer += chunk;
 
-          // Only start collecting once we see the connection id
-          if (!collecting) {
-            const marker = this.connectionId + " ";
-            const idx = responseBuffer.indexOf(marker);
-            if (idx !== -1) {
-              // Trim everything up to and including the connection id
-              responseBuffer = responseBuffer.slice(idx + marker.length);
-              collecting = true;
-            } else {
-              // Haven’t seen our connectionId yet, ignore this chunk
-              responseBuffer = "";
-              return;
+            // Only start collecting once we see the connection id
+            if (!collecting) {
+              const marker = this.connectionId + " ";
+              const idx = responseBuffer.indexOf(marker);
+              if (idx !== -1) {
+                // Trim everything up to and including the connection id
+                responseBuffer = responseBuffer.slice(idx + marker.length);
+                collecting = true;
+              } else {
+                // Haven’t seen our connectionId yet, ignore this chunk
+                responseBuffer = "";
+                return;
+              }
+            }
+
+            // Check for double newline
+            if (responseBuffer.includes("\n\n")) {
+              this.device?.removeEventListener("inputreport", handler);
+              this.off("disconnected", disconnectHandler);
+
+              // trim responceBuffer
+              responseBuffer = responseBuffer.split("\n\n")[0];
+              responseBuffer = responseBuffer.replace(/^\x00+/, ''); // Strip null characters
+              resolve(responseBuffer);
+              clearTimeout(timer);
             }
           }
+        };
 
-          // Check for double newline
-          if (responseBuffer.includes("\n\n")) {
-            this.device?.removeEventListener("inputreport", handler);
+        this.device.addEventListener("inputreport", handler);
 
-            // trim responceBuffer
-            responseBuffer = responseBuffer.split("\n\n")[0];
-            responseBuffer = responseBuffer.replace(/^\x00+/, ''); // Strip null characters
-            this.sendCommandLock.release();
-            resolve(responseBuffer);
-            clearTimeout(timer);
+        const splitCommandBytes = splitUint8Array(commandBytes, 63 - headerBytes.length);
+
+        for (const commandBytesChunk of splitCommandBytes) {
+          const fullPacket = new Uint8Array(63);
+          fullPacket.set(headerBytes, 0);
+          fullPacket.set(commandBytesChunk, headerBytes.length);
+
+          this.device.sendReport(0, fullPacket).catch((err) => {
             this.device?.removeEventListener("inputreport", handler);
-          }
+            this.off("disconnected", disconnectHandler);
+            reject(err);
+          });
         }
-      };
 
-      this.device.addEventListener("inputreport", handler);
+        if (timeout && timeout > 0) {
+          timer = setTimeout(() => {
+            this.device?.removeEventListener("inputreport", handler);
+            this.off("disconnected", disconnectHandler);
+            reject(new Error("Command timed out"));
+          }, timeout);
+        }
 
-      const splitCommandBytes = splitUint8Array(commandBytes, 63 - headerBytes.length);
-
-      for (const commandBytesChunk of splitCommandBytes) {
-        const fullPacket = new Uint8Array(63);
-        fullPacket.set(headerBytes, 0);
-        fullPacket.set(commandBytesChunk, headerBytes.length);
-
-        this.device.sendReport(0, fullPacket).catch((err) => {
+        const disconnectHandler = () =>{
+          console.warn("Device disconnected while running command");
           this.device?.removeEventListener("inputreport", handler);
-          this.sendCommandLock.release();
-          reject(err);
-        });
-      }
+          this.off("disconnected", disconnectHandler);
+          reject(new Error("Device disconnected"));
+        }
 
-      if (timeout && timeout > 0) {
-        timer = setTimeout(() => {
-          this.device?.removeEventListener("inputreport", handler);
-          this.sendCommandLock.release();
-          reject(new Error("Command timed out"));
-        }, timeout);
-      }
+        this.on("disconnected", disconnectHandler);
+      });
     });
   }
 
