@@ -1,5 +1,7 @@
 "use client";
 
+import yaml from "js-yaml";
+
 export function isHidSupported(): boolean {
   return !!navigator?.hid;
 }
@@ -10,8 +12,26 @@ const options: HIDDeviceRequestOptions = {
       usagePage: 65329,
       usage: 116
     },
+    {
+      usagePage: 0x4c4a,
+      usage: 0x0001
+    },
   ],
 };
+
+function parseData(data: string): unknown {
+  try {
+    return JSON.parse(data);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (jsonError) {
+    try {
+      return yaml.load(data);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (yamlError) {
+      throw new Error("Failed to parse data as JSON or YAML.");
+    }
+  }
+}
 
 // My documentation of the Javelin event system, TODO, move or delete this
 // e: event
@@ -850,19 +870,19 @@ export class JavelinHidDevice extends EventTarget {
       for (const rawLine of lines) {
         const line = rawLine.replace(/^\x00+/, ''); // This caused so much debugging
         if (line.startsWith("EV ")) {
-          const jsonPart = line.slice(3).trim();
+          const dataPart = line.slice(3).trim();
           try {
-            const ev = JSON.parse(jsonPart);
+            const ev = parseData(dataPart) as { e: string; [key: string]: unknown };
 
             const decoded = decodeJavEvent(ev);
             if (decoded) {
               this.emit(decoded.event, decoded.detail);
             } else {
-              console.warn("Failed to parse EV JSON:", ev);
+              console.warn("Failed to parse event data:", ev);
             }
 
           } catch (err) {
-            console.warn("Failed to parse EV JSON:", jsonPart, err);
+            console.warn("Failed to parse event data:", dataPart, err);
           }
         }
       }

@@ -130,6 +130,122 @@ describe("JavelinHidDevice (WebHID mocked)", () => {
     expect(typeof detail.raw).toBe("string");
   });
 
+  test("startEventListener parses EV lines and emits typed events (text with yaml)", async () => {
+    const fakeDevice = new FakeHIDDevice();
+    const j = new JavelinHidDevice();
+    j.device = (fakeDevice as unknown) as HIDDevice;
+    j.connected = true;
+
+    const textListener = jest.fn();
+    j.on("text", (ev: any) => {
+      textListener(ev.detail);
+    });
+
+    (j as any).startEventListener();
+
+    const yaml = `{e: t,t: "Hello, YAML!"}`;
+    const line = `EV ${yaml}\n`;
+    fakeDevice.emitInputReport(0, dataViewFromString(line));
+
+    expect(textListener).toHaveBeenCalledTimes(1);
+    const detail = textListener.mock.calls[0][0];
+    expect(detail.text).toBe("Hello, YAML!");
+    expect(typeof detail.raw).toBe("string");
+  });
+
+  test("startEventListener parses EV lines and emits typed events (suggestion with yaml)", async () => {
+    const fakeDevice = new FakeHIDDevice();
+    const j = new JavelinHidDevice();
+    j.device = (fakeDevice as unknown) as HIDDevice;
+    j.connected = true;
+
+    const suggestionListener = jest.fn();
+    j.on("suggestion", (ev: any) => {
+      suggestionListener(ev.detail);
+    });
+
+    (j as any).startEventListener();
+
+    const yaml = `{e: s,c: 2,t: "this is",o: ["TH-S", "STKHE", "STKH-B"]}`;
+    const line = `EV ${yaml}\n`;
+    fakeDevice.emitInputReport(0, dataViewFromString(line));
+
+    expect(suggestionListener).toHaveBeenCalledTimes(1);
+    const detail = suggestionListener.mock.calls[0][0];
+    expect(detail.strokes).toBe(2);
+    expect(detail.translation).toBe("this is");
+    expect(detail.outlines).toEqual(["TH-S", "STKHE", "STKH-B"]);
+  });
+
+  test("startEventListener parses EV lines and emits typed events (paper_tape with yaml)", async () => {
+    const fakeDevice = new FakeHIDDevice();
+    const j = new JavelinHidDevice();
+    j.device = (fakeDevice as unknown) as HIDDevice;
+    j.connected = true;
+
+    const paperTapeListener = jest.fn();
+    j.on("paper_tape", (ev: any) => {
+      paperTapeListener(ev.detail);
+    });
+
+    (j as any).startEventListener();
+
+    const yaml = `{e: p,o: "TH",d: "main.json",t: "this"}`;
+    const line = `EV ${yaml}\n`;
+    fakeDevice.emitInputReport(0, dataViewFromString(line));
+
+    expect(paperTapeListener).toHaveBeenCalledTimes(1);
+    const detail = paperTapeListener.mock.calls[0][0];
+    expect(detail.outline).toBe("TH");
+    expect(detail.dictionary).toBe("main.json");
+    expect(detail.translation).toBe("this");
+  });
+
+  test("startEventListener parses EV lines and emits typed events (button_state with yaml)", async () => {
+    const fakeDevice = new FakeHIDDevice();
+    const j = new JavelinHidDevice();
+    j.device = (fakeDevice as unknown) as HIDDevice;
+    j.connected = true;
+
+    const buttonStateListener = jest.fn();
+    j.on("button_state", (ev: any) => {
+        buttonStateListener(ev.detail);
+    });
+
+    (j as any).startEventListener();
+
+    const yaml = `{e: b,d: "AAAAAAAAAAA="}`;
+    const line = `EV ${yaml}\n`;
+    fakeDevice.emitInputReport(0, dataViewFromString(line));
+
+    expect(buttonStateListener).toHaveBeenCalledTimes(1);
+    const detail = buttonStateListener.mock.calls[0][0];
+    expect(detail.keys).toEqual(new Array(64).fill(false));
+  });
+
+  test("startEventListener parses EV lines and emits typed events (dictionary_status with yaml)", async () => {
+    const fakeDevice = new FakeHIDDevice();
+    const j = new JavelinHidDevice();
+    j.device = (fakeDevice as unknown) as HIDDevice;
+    j.connected = true;
+
+    const dictionaryStatusListener = jest.fn();
+    j.on("dictionary_status", (ev: any) => {
+        dictionaryStatusListener(ev.detail);
+    });
+
+    (j as any).startEventListener();
+
+    const yaml = `{e: d,d: "user.json",v: 0}`;
+    const line = `EV ${yaml}\n`;
+    fakeDevice.emitInputReport(0, dataViewFromString(line));
+
+    expect(dictionaryStatusListener).toHaveBeenCalledTimes(1);
+    const detail = dictionaryStatusListener.mock.calls[0][0];
+    expect(detail.dictionary).toBe("user.json");
+    expect(detail.enabled).toBe(false);
+  });
+
   test("sendCommand resolves when device emits response ending with double newline and respects connectionId", async () => {
     const fakeDevice = new FakeHIDDevice();
     const j = new JavelinHidDevice();
