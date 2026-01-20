@@ -11,7 +11,7 @@ export default function Header() {
 
   return (
     <div className="h-16">
-      <div className="h-16 bg-secondary fixed top-0 left-0 px-7 pr-15 rounded-br-full flex items-center z-10">
+      <div className="h-16 bg-secondary fixed top-0 left-0 px-7 pr-15 rounded-br-full flex items-center z-100">
         <Link href="/" className="font-bold text-lg hover:underline">
           Javelin 3rd party web tools
         </Link>

@@ -1,0 +1,6 @@
+{
+  "name": "Hesitation Tracker",
+  "icon": "/tools/hesitation-tracker/icon.svg",
+  "author": "ServerBBQ",
+  "description": "Tracks hesitation between strokes."
+}
