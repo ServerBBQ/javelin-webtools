@@ -74,16 +74,22 @@ export default function JavelinHidDemo() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-xl font-bold">Javelin HID Demo Console</h1>
-      <ConnectionStatus
-        hid={hid}
-        connectedText="Connected to {deviceName}"
-        disconnectedText="Not connected"
-        onStatusChange={(isConnected) => console.log("Connection state: " + isConnected)}
-      />
-
-      <ConnectButton hid={hid} onConnected={(device) => console.log("Connected to:", device?.productName)} className="bg-blue-500"/>
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Javelin HID Example</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">A example used to demonstrate how to interact with the Javelin HID device.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <ConnectionStatus
+            hid={hid}
+            connectedText="Connected to {deviceName}"
+            disconnectedText="Not connected"
+            onStatusChange={(isConnected) => console.log("Connection state: " + isConnected)}
+          />
+          <ConnectButton hid={hid} onConnected={(device) => console.log("Connected to:", device?.productName)} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm" />
+        </div>
+      </div>
 
       <textarea
         ref={consoleRef}
