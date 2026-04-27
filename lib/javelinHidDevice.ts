@@ -865,7 +865,7 @@ export class JavelinHidDevice extends EventTarget {
       this.eventBuffer += chunk;
 
       // Split into complete lines
-      const lines = this.eventBuffer.split("\n");
+      const lines = this.eventBuffer.split("\n\n");
       this.eventBuffer = lines.pop() ?? ""; // save incomplete tail
       for (const rawLine of lines) {
         const line = rawLine.replace(/^\x00+/, ''); // This caused so much debugging
